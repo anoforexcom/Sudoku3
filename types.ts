@@ -12,6 +12,7 @@ export interface GlobalSettings {
   mistakePenalty: number;
   stripePublicKey?: string;
   stripeSecretKey?: string;
+  paypalClientId?: string;
   paymentMode: 'simulated' | 'real';
 }
 

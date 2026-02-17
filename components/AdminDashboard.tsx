@@ -582,23 +582,56 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
                     </div>
                 </div>
 
-                {/* Important Notice */}
+                {/* PayPal Config */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    <div className="flex items-center gap-3 text-blue-600 mb-2">
+                        <DollarSign size={24} />
+                        <h3 className="font-black uppercase tracking-tight">PayPal Gateway</h3>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PayPal Client ID</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800"
+                                value={localSettings.paypalClientId || ''}
+                                placeholder="Abc123xyz..."
+                                onChange={(e) => setLocalSettings({ ...localSettings, paypalClientId: e.target.value })}
+                            />
+                        </div>
+                        <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                            <p className="text-[9px] text-blue-800 font-bold uppercase tracking-wider leading-relaxed">
+                                Use your live Client ID from the PayPal Developer Portal to accept real payments.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Activation Guide */}
                 <div className="bg-amber-50 p-8 rounded-[2.5rem] border border-amber-100 space-y-4">
                     <div className="flex items-center gap-3 text-amber-600">
                         <AlertTriangle size={24} />
-                        <h3 className="font-black uppercase tracking-tight">Implementation Required</h3>
+                        <h3 className="font-black uppercase tracking-tight">Activation Guide</h3>
                     </div>
-                    <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                        Para aceitares pagamentos reais:<br /><br />
-                        1. Cria conta em <a href="https://stripe.com" target="_blank" className="underline font-bold">Stripe.com</a>.<br />
-                        2. Vai a <strong>Developers {'>'} API Keys</strong>.<br />
-                        3. Copia a <strong>Publishable key</strong> e a <strong>Secret key</strong>.<br />
-                        4. Cola-as aqui e muda o modo para <strong>Real</strong>.
-                    </p>
-                    <div className="pt-4">
-                        <div className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-2">Security Status</div>
-                        <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase">
-                            <CheckCircle size={14} /> Keys are stored in secure Firestore
+                    <div className="text-xs text-amber-800 font-medium leading-relaxed space-y-4">
+                        <div className="space-y-1">
+                            <p className="font-bold underline">Stripe Setup:</p>
+                            <ol className="list-decimal pl-4 space-y-1">
+                                <li>Create an account at <a href="https://stripe.com" target="_blank" className="underline font-bold">Stripe.com</a>.</li>
+                                <li>Go to <strong>Developers {'>'} API Keys</strong>.</li>
+                                <li>Copy the <strong>Publishable key</strong> and <strong>Secret key</strong>.</li>
+                            </ol>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-bold underline">PayPal Setup:</p>
+                            <ol className="list-decimal pl-4 space-y-1">
+                                <li>Login to <a href="https://developer.paypal.com" target="_blank" className="underline font-bold">PayPal Developer</a>.</li>
+                                <li>Create an "App" under <strong>Dashboard {'>'} My Apps & Credentials</strong>.</li>
+                                <li>Copy the <strong>Client ID</strong> from the "Live" tab.</li>
+                            </ol>
+                        </div>
+                        <div className="pt-2">
+                            <p className="font-black uppercase text-[10px]">Step 3: Paste them here and switch the mode to Real.</p>
                         </div>
                     </div>
                 </div>

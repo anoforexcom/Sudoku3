@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { CreditPack, GlobalSettings } from '../types';
 import {
     CreditCard,
@@ -12,7 +13,8 @@ import {
     ArrowLeft,
     ChevronRight,
     Calendar,
-    Key
+    Key,
+    AlertTriangle
 } from 'lucide-react';
 import { VisaIcon, MastercardIcon, PayPalIcon, MBWayIcon, MultibancoIcon } from './PaymentIcons';
 
@@ -230,20 +232,46 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, settings, onComplete, o
                             )}
 
                             {selectedMethod === 'paypal' && (
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PayPal Email</label>
-                                        <div className="relative">
-                                            <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                            <input
-                                                type="email"
-                                                placeholder="user@example.com"
-                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                                value={form.email}
-                                                onChange={(e) => handleInputChange('email', e.target.value)}
-                                            />
+                                <div className="space-y-6">
+                                    {settings.paypalClientId ? (
+                                        <div className="animate-in fade-in zoom-in duration-500">
+                                            <PayPalScriptProvider options={{ clientId: settings.paypalClientId, currency: "EUR" }}>
+                                                <PayPalButtons
+                                                    style={{ layout: "vertical", shape: "pill", label: "pay" }}
+                                                    createOrder={(data, actions) => {
+                                                        return actions.order.create({
+                                                            intent: "CAPTURE",
+                                                            purchase_units: [
+                                                                {
+                                                                    description: `${settings.appName || 'Sudokas'} - ${pack.pack}`,
+                                                                    amount: {
+                                                                        currency_code: "EUR",
+                                                                        value: pack.price.toString(),
+                                                                    },
+                                                                },
+                                                            ],
+                                                        });
+                                                    }}
+                                                    onApprove={async (data, actions) => {
+                                                        if (actions.order) {
+                                                            const details = await actions.order.capture();
+                                                            onComplete('paypal');
+                                                        }
+                                                    }}
+                                                    onError={(err) => {
+                                                        console.error("PayPal Error:", err);
+                                                        alert("Erro no PayPal. Verifica as configurações no Admin.");
+                                                    }}
+                                                />
+                                            </PayPalScriptProvider>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="p-8 text-center bg-rose-50 rounded-3xl border border-rose-100">
+                                            <AlertTriangle className="mx-auto text-rose-500 mb-2" size={32} />
+                                            <p className="text-xs text-rose-800 font-black uppercase tracking-tight">PayPal Client ID missing!</p>
+                                            <p className="text-[10px] text-rose-600 font-medium">Configure your ID in the Admin panel to enable PayPal payments.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -289,24 +317,26 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, settings, onComplete, o
                 </div>
 
                 {/* CTA */}
-                <button
-                    onClick={handlePay}
-                    disabled={isProcessing || !isFormValid()}
-                    className={`w-full py-5 rounded-[2rem] font-black text-xl text-white transition-all shadow-xl flex items-center justify-center gap-3 ${isProcessing || !isFormValid() ? 'bg-slate-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]'
-                        }`}
-                >
-                    {isProcessing ? (
-                        <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            <span>AUTHORIZING...</span>
-                        </div>
-                    ) : (
-                        <>
-                            CONFIRM PAYMENT
-                            <ChevronRight size={24} />
-                        </>
-                    )}
-                </button>
+                {!(selectedMethod === 'paypal' && settings.paymentMode === 'real') && (
+                    <button
+                        onClick={handlePay}
+                        disabled={isProcessing || !isFormValid()}
+                        className={`w-full py-5 rounded-[2rem] font-black text-xl text-white transition-all shadow-xl flex items-center justify-center gap-3 ${isProcessing || !isFormValid() ? 'bg-slate-300 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]'
+                            }`}
+                    >
+                        {isProcessing ? (
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                <span>AUTHORIZING...</span>
+                            </div>
+                        ) : (
+                            <>
+                                CONFIRM PAYMENT
+                                <ChevronRight size={24} />
+                            </>
+                        )}
+                    </button>
+                )}
             </main>
         </div>
     );

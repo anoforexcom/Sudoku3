@@ -47,6 +47,7 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   mistakePenalty: 50,
   stripePublicKey: '',
   stripeSecretKey: '',
+  paypalClientId: '',
   paymentMode: 'simulated'
 };
 
