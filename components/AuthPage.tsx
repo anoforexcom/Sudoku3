@@ -81,7 +81,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onBack }) => {
       <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl max-w-md w-full border border-slate-100 animate-in zoom-in duration-500">
         <div className="text-center mb-10">
           <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center text-white mx-auto mb-8 shadow-2xl rotate-6 overflow-hidden border border-slate-100">
-            <img src="/favicon.png" alt="SudokuHub Logo" className="w-16 h-16 object-contain" />
+            <img src="/favicon.png" alt="SudokasLive Logo" className="w-16 h-16 object-contain" />
           </div>
           <h2 className="text-3xl font-black text-slate-800 mb-2 uppercase tracking-tight">{isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}</h2>
           <p className="text-slate-400 font-bold text-sm">{isLogin ? 'Login to continue your progress' : 'Sign up and get 50 free credits'}</p>

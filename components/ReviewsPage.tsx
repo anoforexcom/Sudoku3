@@ -15,9 +15,9 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack }) => {
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
                         <div className="bg-white p-0.5 rounded-lg text-white shadow-sm overflow-hidden border border-slate-100 flex items-center justify-center">
-                            <img src="/favicon.png" alt="SudokuHub Logo" className="w-6 h-6 object-contain" />
+                            <img src="/favicon.png" alt="SudokasLive Logo" className="w-6 h-6 object-contain" />
                         </div>
-                        <span className="font-black text-xl tracking-tight text-slate-800 uppercase">SUDOKUHUB.LIVE</span>
+                        <span className="font-black text-xl tracking-tight text-slate-800 uppercase">SUDOKAS.LIVE</span>
                     </div>
                     <button
                         onClick={onBack}

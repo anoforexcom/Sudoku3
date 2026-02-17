@@ -1,4 +1,4 @@
-# 🚀 Project Handoff Guide: sudokuhub.live
+# 🚀 Project Handoff Guide: sudokas.live
 
 Welcome to your new Sudoku platform! This guide will walk you through the steps to get the project running on your own infrastructure.
 
@@ -6,21 +6,22 @@ Welcome to your new Sudoku platform! This guide will walk you through the steps 
 
 - **Node.js 18+** installed.
 - A **Vercel** account (for hosting).
-- A **Supabase** account (for database & auth).
+- A **Firebase** account (for database & auth).
 
 ---
 
-## 🛠️ Step 1: Supabase Setup (Database & Auth)
+## 🛠️ Step 1: Firebase Setup (Auth & Firestore)
 
-1. **Create a new project** on [Supabase](https://supabase.com).
-2. **Setup Database**:
-   - Go to the **SQL Editor** in your Supabase dashboard.
-   - Create a "New Query".
-   - Copy the contents of the `supabase.sql` file (found in the project root) and paste them into the editor.
-   - Click **Run**. This will create the `profiles`, `levels_completed`, `purchases`, and `chat_messages` tables, along with the necessary security policies (RLS).
-3. **Authentication**:
-   - Go to **Authentication > Providers** and ensure "Email" is enabled.
-   - (Optional) Configure SMTP if you want to send real recovery/confirmation emails.
+1. **Create a new project** on [Firebase](https://console.firebase.google.com).
+2. **Authentication**:
+   - Go to **Authentication > Sign-in method** and enable "Email/Password".
+3. **Cloud Firestore**:
+   - Go to **Firestore Database** and create a database.
+   - Start in "Test Mode" or set proper security rules.
+   - The app will automatically create the necessary collections (`profiles`, `purchases`, `chat_messages`) when data is first written.
+4. **Web App**:
+   - Register a new Web App in your Firebase project.
+   - Copy the Firebase Configuration (API Key, Project ID, etc.).
 
 ---
 
@@ -28,11 +29,14 @@ Welcome to your new Sudoku platform! This guide will walk you through the steps 
 
 1. **Import the repository** from GitHub to Vercel.
 2. **Configure Environment Variables**:
-   In the Vercel project settings, add the following variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase Project URL.
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase Project Anon Key.
-   
-   *You can find these in Supabase under **Project Settings > API**.*
+   In the Vercel project settings, add the following variables from your Firebase config:
+   - `NEXT_PUBLIC_FIREBASE_API_KEY`
+   - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+   - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+   - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+   - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+   - `NEXT_PUBLIC_FIREBASE_APP_ID`
+   - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
 
 3. **Deploy**: Vercel will automatically build and deploy the project.
 
@@ -40,17 +44,17 @@ Welcome to your new Sudoku platform! This guide will walk you through the steps 
 
 ## 💰 Step 3: Monetization & Payments
 
-Currently, the project uses a **simulated payment system** integrated with Supabase:
-- When a user "buys" a pack, the transaction is recorded in the `purchases` table.
-- Credits are automatically added to the user's profile in the `profiles` table.
+Currently, the project uses a **simulated payment system** integrated with Firestore:
+- When a user "buys" a pack, the transaction is recorded in the `purchases` collection.
+- Credits are automatically added to the user's profile in the `profiles` collection.
 - **To implement real payments (Stripe/PayPal)**: You will need to replace the logic in `components/PaymentPage.tsx` with your preferred payment gateway API.
 
 ---
 
 ## 📊 Step 4: Admin Dashboard
 
-- **Access**: Double-click the logo on the landing page to enter the hidden admin panel.
-- **Security**: The admin panel currently displays data fetched from Supabase. Ensure you manage your Supabase access tokens securely.
+- **Access**: Double-click the logo on the landing page (6 times) to enter the hidden admin panel.
+- **Security**: The admin panel displays data fetched from Firestore.
 
 ---
 
@@ -58,9 +62,8 @@ Currently, the project uses a **simulated payment system** integrated with Supab
 
 - `/app`: Next.js App Router (Main logic in `AppClient.tsx`).
 - `/components`: UI elements (Modals, Pages, PWA components).
-- `/services`: Business logic (Supabase client, Sudoku generation).
-- `supabase.sql`: Database schema and RLS policies.
+- `/services`: Business logic (Firebase client, Sudoku generation).
 
 ---
 
-**Congratulations!** Your project is ready for users. For further customization (colors, app name), use the Admin Dashboard within the app.
+**Congratulations!** Your project is ready for users. For further customization (colors, app name), use the constant settings within the code.
