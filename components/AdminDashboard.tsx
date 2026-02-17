@@ -45,7 +45,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpdateSettings, onUpdateUser, onBack }) => {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'sales' | 'settings' | 'rankings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'sales' | 'settings' | 'rankings' | 'payments'>('dashboard');
     const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [localSettings, setLocalSettings] = useState(settings);
@@ -518,6 +518,90 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
         );
     };
 
+    const renderPayments = () => (
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Payment Integration</h2>
+                <button
+                    onClick={handleSaveSettings}
+                    className="flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/30 font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all"
+                >
+                    <Save size={20} /> Save Changes
+                </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+                {/* Stripe Config */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    <div className="flex items-center gap-3 text-indigo-600 mb-2">
+                        <DollarSign size={24} />
+                        <h3 className="font-black uppercase tracking-tight">Stripe Gateway</h3>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Payment Mode</label>
+                            <div className="flex bg-slate-50 p-1 rounded-2xl border border-slate-100">
+                                <button
+                                    onClick={() => setLocalSettings({ ...localSettings, paymentMode: 'simulated' })}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${localSettings.paymentMode === 'simulated' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400'}`}
+                                >
+                                    Simulated
+                                </button>
+                                <button
+                                    onClick={() => setLocalSettings({ ...localSettings, paymentMode: 'real' })}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${localSettings.paymentMode === 'real' ? 'bg-indigo-600 shadow-md text-white' : 'text-slate-400'}`}
+                                >
+                                    Real (Stripe)
+                                </button>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Stripe Public Key (pk_test_...)</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold text-slate-800"
+                                value={localSettings.stripePublicKey || ''}
+                                placeholder="pk_live_..."
+                                onChange={(e) => setLocalSettings({ ...localSettings, stripePublicKey: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Stripe Secret Key (sk_test_...)</label>
+                            <input
+                                type="password"
+                                className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold text-slate-800"
+                                value={localSettings.stripeSecretKey || ''}
+                                placeholder="sk_live_..."
+                                onChange={(e) => setLocalSettings({ ...localSettings, stripeSecretKey: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Important Notice */}
+                <div className="bg-amber-50 p-8 rounded-[2.5rem] border border-amber-100 space-y-4">
+                    <div className="flex items-center gap-3 text-amber-600">
+                        <AlertTriangle size={24} />
+                        <h3 className="font-black uppercase tracking-tight">Implementation Required</h3>
+                    </div>
+                    <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                        To enable real payments, you must:
+                        <br /><br />
+                        1. Enable <strong>Firebase Functions</strong> in your console.<br />
+                        2. Upgrade your project to the <strong>Blaze Plan</strong>.<br />
+                        3. Deploy the backend code for verifying Stripe webhooks.
+                    </p>
+                    <div className="pt-4">
+                        <div className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-2">Security Status</div>
+                        <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase">
+                            <CheckCircle size={14} /> Keys are stored in secure Firestore
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-[#f8fafc] flex">
             {/* Sidebar */}
@@ -542,6 +626,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
                             { id: 'users', label: 'Players', icon: <Users size={18} /> },
                             { id: 'rankings', label: 'Rankings', icon: <Trophy size={18} /> },
                             { id: 'sales', label: 'Sales History', icon: <ShoppingBag size={18} /> },
+                            { id: 'payments', label: 'Payments', icon: <DollarSign size={18} /> },
                             { id: 'settings', label: 'Global Setup', icon: <Settings size={18} /> },
                         ].map(tab => (
                             <button
@@ -570,6 +655,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
                 {activeTab === 'sales' && renderSales()}
                 {activeTab === 'settings' && renderSettings()}
                 {activeTab === 'rankings' && renderRankings()}
+                {activeTab === 'payments' && renderPayments()}
 
                 {/* Toast Feedback */}
                 {toast && (

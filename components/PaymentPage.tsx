@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { CreditPack } from '../types';
+import { CreditPack, GlobalSettings } from '../types';
 import {
     CreditCard,
     Smartphone,
@@ -18,6 +18,7 @@ import { VisaIcon, MastercardIcon, PayPalIcon, MBWayIcon, MultibancoIcon } from 
 
 interface PaymentPageProps {
     pack: CreditPack;
+    settings: GlobalSettings;
     onComplete: (paymentMethod: string) => void;
     onBack: () => void;
 }
@@ -29,7 +30,7 @@ const PAYMENT_METHODS = [
     { id: 'multibanco', name: 'Entity', icon: <MultibancoIcon size={28} />, desc: 'Reference' },
 ];
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ pack, onComplete, onBack }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ pack, settings, onComplete, onBack }) => {
     const [selectedMethod, setSelectedMethod] = useState<string>('card');
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -47,6 +48,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, onComplete, onBack }) =
     };
 
     const isFormValid = () => {
+        if (settings.paymentMode === 'simulated') return true;
         if (selectedMethod === 'card') {
             return form.cardNumber.length >= 16 && form.expiry.length >= 5 && form.cvc.length >= 3;
         }
@@ -56,16 +58,29 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, onComplete, onBack }) =
         if (selectedMethod === 'paypal') {
             return form.email.includes('@');
         }
-        return true; // Multibanco is always "valid" as it shows references
+        return true;
     };
 
     const handlePay = () => {
         if (!isFormValid()) return;
         setIsProcessing(true);
-        setTimeout(() => {
-            onComplete(selectedMethod);
-            setIsProcessing(false);
-        }, 2000);
+
+        if (settings.paymentMode === 'simulated') {
+            // Simulated payment flow
+            setTimeout(() => {
+                onComplete(selectedMethod);
+                setIsProcessing(false);
+            }, 2000);
+        } else {
+            // Real Payment Flow (Stripe)
+            // Note: This is where the Stripe Checkout or Elements would be triggered.
+            // For now, we show a professional integration placeholder.
+            setTimeout(() => {
+                alert(`Real Payment Integration Initiated with: ${settings.stripePublicKey?.slice(0, 10)}... (Checkout would open here)`);
+                onComplete(selectedMethod);
+                setIsProcessing(false);
+            }, 3000);
+        }
     };
 
     return (
@@ -116,108 +131,122 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, onComplete, onBack }) =
                             {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.icon}
                         </div>
                         <h3 className="font-black text-slate-800 uppercase tracking-tight">
-                            {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name} Details
+                            {settings.paymentMode === 'real' ? `${PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name} Details` : 'Simulated Payment'}
                         </h3>
                     </div>
 
-                    {selectedMethod === 'card' && (
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Card Number</label>
-                                <div className="relative">
-                                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder="0000 0000 0000 0000"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                        value={form.cardNumber}
-                                        onChange={(e) => handleInputChange('cardNumber', e.target.value.replace(/\D/g, '').slice(0, 16))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Expiry Date</label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                        <input
-                                            type="text"
-                                            placeholder="MM/YY"
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                            value={form.expiry}
-                                            onChange={(e) => handleInputChange('expiry', e.target.value.slice(0, 5))}
-                                        />
+                    {settings.paymentMode === 'real' ? (
+                        <>
+                            {selectedMethod === 'card' && (
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Card Number</label>
+                                        <div className="relative">
+                                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="0000 0000 0000 0000"
+                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
+                                                value={form.cardNumber}
+                                                onChange={(e) => handleInputChange('cardNumber', e.target.value.replace(/\D/g, '').slice(0, 16))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Expiry Date</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="MM/YY"
+                                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
+                                                    value={form.expiry}
+                                                    onChange={(e) => handleInputChange('expiry', e.target.value.slice(0, 5))}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">CVC</label>
+                                            <div className="relative">
+                                                <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="123"
+                                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
+                                                    value={form.cvc}
+                                                    onChange={(e) => handleInputChange('cvc', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">CVC</label>
-                                    <div className="relative">
-                                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                        <input
-                                            type="text"
-                                            placeholder="123"
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                            value={form.cvc}
-                                            onChange={(e) => handleInputChange('cvc', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                        />
+                            )}
+
+                            {selectedMethod === 'mbway' && (
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Phone Number</label>
+                                        <div className="relative">
+                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                            <input
+                                                type="tel"
+                                                placeholder="912 345 678"
+                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
+                                                value={form.phone}
+                                                onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, '').slice(0, 9))}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-medium pl-1">You will receive a notification in your app to authorize the payment.</p>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
+                            )}
 
-                    {selectedMethod === 'mbway' && (
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Phone Number</label>
-                                <div className="relative">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input
-                                        type="tel"
-                                        placeholder="912 345 678"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                        value={form.phone}
-                                        onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, '').slice(0, 9))}
-                                    />
+                            {selectedMethod === 'paypal' && (
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PayPal Email</label>
+                                        <div className="relative">
+                                            <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                            <input
+                                                type="email"
+                                                placeholder="user@example.com"
+                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
+                                                value={form.email}
+                                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <p className="text-[10px] text-slate-400 font-medium pl-1">You will receive a notification in your app to authorize the payment.</p>
-                            </div>
-                        </div>
-                    )}
+                            )}
 
-                    {selectedMethod === 'paypal' && (
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">PayPal Email</label>
-                                <div className="relative">
-                                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input
-                                        type="email"
-                                        placeholder="user@example.com"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold transition-all"
-                                        value={form.email}
-                                        onChange={(e) => handleInputChange('email', e.target.value)}
-                                    />
+                            {selectedMethod === 'multibanco' && (
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4 font-mono">
+                                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-black text-slate-400">ENTITY</span>
+                                        <span className="font-black text-slate-800">12345</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-black text-slate-400">REFERENCE</span>
+                                        <span className="font-black text-slate-800">987 654 321</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-black text-slate-400">VALUE</span>
+                                        <span className="font-black text-indigo-600">{pack.amount}</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 font-bold text-center uppercase tracking-widest pt-2">VALID FOR 24 HOURS</p>
                                 </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="py-8 text-center space-y-4">
+                            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+                                <ShieldCheck size={32} />
                             </div>
-                        </div>
-                    )}
-
-                    {selectedMethod === 'multibanco' && (
-                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4 font-mono">
-                            <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
-                                <span className="text-[10px] font-black text-slate-400">ENTITY</span>
-                                <span className="font-black text-slate-800">12345</span>
+                            <div>
+                                <h4 className="font-black text-slate-800 uppercase tracking-tight">Test Environment Active</h4>
+                                <p className="text-xs text-slate-400 font-medium">No real funds will be charged. Click below to simulate a successful transaction.</p>
                             </div>
-                            <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
-                                <span className="text-[10px] font-black text-slate-400">REFERENCE</span>
-                                <span className="font-black text-slate-800">987 654 321</span>
-                            </div>
-                            <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
-                                <span className="text-[10px] font-black text-slate-400">VALUE</span>
-                                <span className="font-black text-indigo-600">{pack.amount}</span>
-                            </div>
-                            <p className="text-[9px] text-slate-400 font-bold text-center uppercase tracking-widest pt-2">VALID FOR 24 HOURS</p>
                         </div>
                     )}
                 </div>

@@ -10,6 +10,9 @@ export interface GlobalSettings {
   pointsPerLevel: number;
   timeBonusMultiplier: number;
   mistakePenalty: number;
+  stripePublicKey?: string;
+  stripeSecretKey?: string;
+  paymentMode: 'simulated' | 'real';
 }
 
 export interface CreditPack {

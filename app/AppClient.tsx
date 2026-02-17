@@ -44,7 +44,10 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   primaryColor: '#4f46e5',
   pointsPerLevel: 100,
   timeBonusMultiplier: 2.0,
-  mistakePenalty: 50
+  mistakePenalty: 50,
+  stripePublicKey: '',
+  stripeSecretKey: '',
+  paymentMode: 'simulated'
 };
 
 const App: React.FC = () => {
@@ -69,6 +72,21 @@ const App: React.FC = () => {
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [adminClicks, setAdminClicks] = useState(0);
   const adminTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Fetch global settings from Firestore
+    const settingsRef = doc(db, 'config', 'global');
+    const unsub = onSnapshot(settingsRef, (snap) => {
+      if (snap.exists()) {
+        setSettings(snap.data() as GlobalSettings);
+      } else {
+        // Initialize settings if they don't exist
+        setDoc(settingsRef, DEFAULT_SETTINGS);
+      }
+    });
+
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (view === 'admin') {
@@ -523,6 +541,7 @@ const App: React.FC = () => {
       return (
         <PaymentPage
           pack={selectedPack}
+          settings={settings}
           onComplete={(method) => {
             if (userProfile && selectedPack) {
               const newCredits = userProfile.credits + selectedPack.qty;
@@ -548,9 +567,13 @@ const App: React.FC = () => {
         <AdminDashboard
           users={adminUsers}
           settings={settings}
-          onUpdateSettings={(s) => {
+          onUpdateSettings={async (s) => {
             setSettings(s);
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+            try {
+              await setDoc(doc(db, 'config', 'global'), s);
+            } catch (err) {
+              console.error("Error saving terminal settings:", err);
+            }
           }}
           onUpdateUser={async (id, updates) => {
             const profileRef = doc(db, 'profiles', id);
