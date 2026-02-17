@@ -376,7 +376,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onNavigate, onAdmin,
             <ul className="space-y-4 text-sm font-bold text-slate-600">
               <li className="flex items-center gap-3">
                 <Mail size={16} className="text-indigo-600" />
-                <a href="mailto:support@sudokuhub.live" className="hover:text-indigo-600 transition-colors">support@sudokuhub.live</a>
+                <a href="mailto:support@sudokas.live" className="hover:text-indigo-600 transition-colors">support@sudokas.live</a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={16} className="text-indigo-600" />
