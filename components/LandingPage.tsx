@@ -62,7 +62,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onNavigate, onAdmin,
             onClick={handleLogoClick}
           >
             <div className="bg-white p-0.5 rounded-lg text-white group-hover:scale-110 transition-transform shadow-sm overflow-hidden border border-slate-100 flex items-center justify-center">
-              <img src="/favicon.png" alt="SudokuHub Logo" className="w-6 h-6 object-contain" />
+              <img src="/favicon.png" alt="SudokasLive Logo" className="w-6 h-6 object-contain" />
             </div>
             <span className="font-black text-xl tracking-tight text-slate-800 uppercase">{appName}</span>
           </div>
@@ -104,7 +104,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onNavigate, onAdmin,
           <div className="text-left relative z-10">
             <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-400/10 blur-[100px] rounded-full"></div>
             <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 leading-tight">
-              Master your mind with <span className="text-indigo-600">SudokuHub</span>
+              Master your mind with <span className="text-indigo-600">SudokasLive</span>
             </h1>
             <p className="text-xl text-slate-600 mb-10 max-w-lg leading-relaxed">
               The ultimate Sudoku experience with {TOTAL_LEVELS} challenging levels, strategic credit system, and global rankings.
@@ -415,7 +415,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onNavigate, onAdmin,
           </div>
         </div>
         <div className="mt-24 pt-8 border-t border-slate-50 text-center text-[10px] text-slate-400 font-black tracking-[0.2em] uppercase">
-          © 2026 SUDOKUHUB.LIVE. ALL RIGHTS RESERVED.
+          © 2026 SUDOKAS.LIVE. ALL RIGHTS RESERVED.
         </div>
       </footer>
     </div>

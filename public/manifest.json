@@ -1,6 +1,6 @@
 {
-    "name": "sudokuhub.live - Premium Sudoku Game",
-    "short_name": "SudokuHub",
+    "name": "sudokas.live - Premium Sudoku Game",
+    "short_name": "SudokasLive",
     "description": "Play 150 progressive Sudoku levels with hints, leaderboards, and achievements. Premium brain training game.",
     "start_url": "/",
     "display": "standalone",
