@@ -598,7 +598,7 @@ const App: React.FC = () => {
                 className="bg-white p-0.5 rounded-xl text-white shadow-lg overflow-hidden flex items-center justify-center border border-slate-100"
                 title="Logo"
               >
-                <img src="/favicon.png" alt="SudokuHub Logo" className="w-8 h-8 object-contain" />
+                <img src="/favicon.svg" alt="SudokasLive Logo" className="w-8 h-8 object-contain" />
               </button>
               <div onClick={() => setShowPurchaseModal(true)} className="flex flex-col text-xs font-black text-indigo-600 cursor-pointer hover:opacity-80 transition-opacity">
                 <span className="text-slate-400">CREDITS</span>
