@@ -115,12 +115,14 @@ const ChatGroup: React.FC<ChatGroupProps> = ({ messages, onSendMessage, onClose,
                     {msg.sender}
                   </span>
                   <span className="text-[8px] text-slate-300 font-bold">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {msg.timestamp && !isNaN(msg.timestamp)
+                      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '--:--'}
                   </span>
                 </div>
                 <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm font-medium shadow-sm transition-all duration-200 ${msg.isMe
-                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100'
-                    : `${styles?.bg} ${styles?.text} ${styles?.border} border rounded-tl-none`
+                  ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100'
+                  : `${styles?.bg} ${styles?.text} ${styles?.border} border rounded-tl-none`
                   }`}>
                   {msg.text}
                 </div>

@@ -101,7 +101,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
     }, [allPurchases, dateRange]);
 
     const stats = useMemo(() => {
-        const revenue = filteredPurchases.reduce((acc, p) => acc + p.amount, 0);
+        const revenue = filteredPurchases.reduce((acc, p) => acc + (p.amount || 0), 0);
         return {
             revenue,
             users: users.length,
@@ -157,10 +157,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Revenue', value: `$${stats.revenue.toFixed(2)}`, icon: <DollarSign size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                    { label: 'Total Users', value: stats.users, icon: <Users size={20} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                    { label: 'Total Sales', value: stats.sales, icon: <ShoppingBag size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
-                    { label: 'Avg Ticket', value: `$${stats.averageTicket.toFixed(2)}`, icon: <Target size={20} />, color: 'text-rose-600', bg: 'bg-rose-50' },
+                    { label: 'Total Revenue', value: `$${(stats.revenue || 0).toFixed(2)}`, icon: <DollarSign size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Total Users', value: stats.users || 0, icon: <Users size={20} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Total Sales', value: stats.sales || 0, icon: <ShoppingBag size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Avg Ticket', value: `$${(stats.averageTicket || 0).toFixed(2)}`, icon: <Target size={20} />, color: 'text-rose-600', bg: 'bg-rose-50' },
                 ].map((s, i) => (
                     <div
                         key={i}

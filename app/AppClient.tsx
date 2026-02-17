@@ -94,7 +94,7 @@ const App: React.FC = () => {
               .filter((pur: any) => pur.user_id === p.id)
               .map((pur: any) => ({
                 id: pur.id,
-                date: pur.created_at?.seconds * 1000 || Date.now(),
+                date: pur.created_at?.seconds ? (pur.created_at.seconds * 1000) : Date.now(),
                 credits: pur.credits,
                 amount: pur.amount,
                 currency: pur.currency,
@@ -216,7 +216,7 @@ const App: React.FC = () => {
           id: doc.id,
           sender: m.sender,
           text: m.text,
-          timestamp: m.created_at?.seconds * 1000 || Date.now(),
+          timestamp: (m.created_at && m.created_at.seconds) ? (m.created_at.seconds * 1000) : Date.now(),
           isMe: userProfile?.name === m.sender
         };
       });
@@ -440,7 +440,7 @@ const App: React.FC = () => {
         }
         setCompletedLevels(prev => [...new Set([...prev, s.level])]);
       }
-      return { ...s, board: newBoard, mistakes: newMistakes, isComplete, history: [...s.history, newBoard] };
+      return { ...s, board: newBoard, mistakes: newMistakes, isComplete, history: [...(s.history || []), newBoard] };
     });
   };
 
