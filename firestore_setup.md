@@ -6,7 +6,7 @@ To ensure your database works correctly and securely with the new code, please f
 Go to **Firestore Database > Rules**. 
 
 > [!IMPORTANT]
-> **NÃO copies** os acentos graves (\`\`\`) nem a palavra "javascript". Copia apenas o código abaixo (desde `rules_version` até ao último `}`):
+> **NÃO copies** os acentos graves (\`\`\`) nem a palavra "javascript". Copia apenas o código abaixo:
 
 ```javascript
 rules_version = '2';
@@ -32,8 +32,6 @@ service cloud.firestore {
     }
 
     // Config: Publicly readable, but only admins can write
-    // To enable Admin: You must manually add a field { "is_admin": true } 
-    // to the user's profile document in the console.
     match /config/{document} {
       allow read: if true;
       allow write: if request.auth != null && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.is_admin == true;
@@ -42,15 +40,22 @@ service cloud.firestore {
 }
 ```
 
-## 2. Collection Structure (Reference)
-As coleções serão criadas automaticamente pelo App.
+## 2. Como te tornares Administrador (Passo a Passo)
 
-### `profiles`
-- **Doc ID**: UID do Utilizador.
-- **Campos**: `name`, `credits`, `total_score`, etc.
+Para teres acesso ao painel de **Pagamentos** e **Configurações**, precisas de dar permissão ao teu utilizador na base de dados:
 
-### `chat_messages`
-- **Campos**: `text`, `user_id`, `user_name`, `timestamp`.
+1.  **Faz Login no site**: Entra no teu site `sudokas.live` com o teu email.
+2.  **Firebase Console**: Abre o [Firebase Console](https://console.firebase.google.com/).
+3.  **Authentication**: Clica em "Authentication" na coluna esquerda e **copia o teu "User UID"** (um código longo de letras e números).
+4.  **Firestore Database**: Vai a "Firestore Database" e abre a coleção **`profiles`**.
+5.  **Encontra o teu perfil**: Procura o documento que tem o nome do teu UID.
+6.  **Adicionar Campo**:
+    *   Clica em **"+ Add field"**.
+    *   **Field name**: `is_admin`
+    *   **Type**: `boolean`
+    *   **Value**: `true` (seleciona a caixa).
+7.  **Reinicia o site**: Agora, ao entrares no site, já terás acesso a todas as opções de administrador!
 
-### `purchases`
-- **Campos**: `user_id`, `credits`, `amount`, `currency`, `created_at`.
+---
+
+**Nota:** As chaves de pagamento ficam guardadas com segurança na coleção `config`, e só tu (como admin) as podes mudar.

@@ -585,11 +585,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
                         <h3 className="font-black uppercase tracking-tight">Implementation Required</h3>
                     </div>
                     <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                        To enable real payments, you must:
-                        <br /><br />
-                        1. Enable <strong>Firebase Functions</strong> in your console.<br />
-                        2. Upgrade your project to the <strong>Blaze Plan</strong>.<br />
-                        3. Deploy the backend code for verifying Stripe webhooks.
+                        Para aceitares pagamentos reais:<br /><br />
+                        1. Cria conta em <a href="https://stripe.com" target="_blank" className="underline font-bold">Stripe.com</a>.<br />
+                        2. Vai a <strong>Developers {'>'} API Keys</strong>.<br />
+                        3. Copia a <strong>Publishable key</strong> e a <strong>Secret key</strong>.<br />
+                        4. Cola-as aqui e muda o modo para <strong>Real</strong>.
                     </p>
                     <div className="pt-4">
                         <div className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-2">Security Status</div>

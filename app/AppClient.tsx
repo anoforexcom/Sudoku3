@@ -89,6 +89,30 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Handle Stripe Redirect Return
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const packId = urlParams.get('packId');
+
+    if (paymentStatus === 'success' && packId && userProfile) {
+      // Find the pack
+      const pack = CREDIT_PACKS.find(p => p.id === packId);
+      if (pack) {
+        const newCredits = userProfile.credits + pack.qty;
+        setUserProfile({ ...userProfile, credits: newCredits });
+        syncCredits(newCredits);
+        recordPurchase(pack);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+        alert("🎉 Pagamento concluído com sucesso! Créditos adicionados.");
+      }
+    } else if (paymentStatus === 'cancel') {
+      window.history.replaceState({}, '', window.location.pathname);
+      alert("Pagamento cancelado.");
+    }
+  }, [userProfile, CREDIT_PACKS]);
+
+  useEffect(() => {
     if (view === 'admin') {
       const fetchAdminData = async () => {
         const profilesSnap = await getDocs(collection(db, 'profiles'));

@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 import { CreditPack, GlobalSettings } from '../types';
 import {
     CreditCard,
@@ -61,7 +61,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, settings, onComplete, o
         return true;
     };
 
-    const handlePay = () => {
+    const handlePay = async () => {
         if (!isFormValid()) return;
         setIsProcessing(true);
 
@@ -72,14 +72,41 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ pack, settings, onComplete, o
                 setIsProcessing(false);
             }, 2000);
         } else {
-            // Real Payment Flow (Stripe)
-            // Note: This is where the Stripe Checkout or Elements would be triggered.
-            // For now, we show a professional integration placeholder.
-            setTimeout(() => {
-                alert(`Real Payment Integration Initiated with: ${settings.stripePublicKey?.slice(0, 10)}... (Checkout would open here)`);
-                onComplete(selectedMethod);
+            // Real Payment Flow (Stripe Checkout)
+            try {
+                if (!settings.stripePublicKey) {
+                    throw new Error('Chave Pública do Stripe não configurada.');
+                }
+
+                const stripe = await loadStripe(settings.stripePublicKey);
+                if (!stripe) throw new Error('Falha ao carregar Stripe.');
+
+                const response = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        packId: pack.id,
+                        packName: pack.pack,
+                        price: pack.price,
+                        successUrl: `${window.location.origin}/?payment=success&packId=${pack.id}`,
+                        cancelUrl: `${window.location.origin}/?payment=cancel`,
+                    }),
+                });
+
+                const session = await response.json();
+                if (session.error) throw new Error(session.error);
+
+                const result = await (stripe as any).redirectToCheckout({
+                    sessionId: session.id,
+                });
+
+                if (result.error) throw new Error(result.error.message);
+
+            } catch (err: any) {
+                console.error('Stripe Checkout Error:', err);
+                alert(`Erro no Pagamento: ${err.message}`);
                 setIsProcessing(false);
-            }, 3000);
+            }
         }
     };
 
