@@ -1,7 +1,8 @@
-
 import React, { useState } from 'react';
 import { Mail, Lock, User, LayoutGrid, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { auth, db } from '../services/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthPageProps {
   onLogin: (user: { name: string, email: string }) => void;
@@ -21,31 +22,44 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onBack }) => {
 
     try {
       if (isLogin) {
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+        const user = userCredential.user;
+        onLogin({
+          name: user.displayName || 'Player',
+          email: user.email!
         });
-
-        if (authError) throw authError;
-        if (data.user) {
-          onLogin({ name: data.user.user_metadata.name || 'Player', email: data.user.email! });
-        }
       } else {
-        const { data, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              name: formData.name,
-            },
-          },
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+        const user = userCredential.user;
+
+        // Update profile name
+        await updateProfile(user, {
+          displayName: formData.name
         });
 
-        if (authError) throw authError;
-        if (data.user) {
-          alert("Registration successful! You can now login.");
-          setIsLogin(true);
-        }
+        // Initialize user profile in Firestore
+        await setDoc(doc(db, 'profiles', user.uid), {
+          id: user.uid,
+          name: formData.name,
+          email: user.email,
+          total_score: 0,
+          credits: 50,
+          sound_enabled: true,
+          music_enabled: true,
+          selected_track_index: 0,
+          created_at: new Date().toISOString()
+        });
+
+        alert("Registration successful! You can now login.");
+        setIsLogin(true);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication');
@@ -55,7 +69,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onBack }) => {
   };
 
   const handleGuestLogin = () => {
-    onLogin({ name: 'Flippa Guest', email: 'guest@sudokuhub.live' });
+    onLogin({ name: 'Guest Player', email: 'guest@example.com' });
   };
 
   return (

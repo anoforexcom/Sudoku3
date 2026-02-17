@@ -27,7 +27,13 @@ import { LEVELS, TOTAL_LEVELS, CREDIT_PACKS } from '../constants';
 import { generatePuzzle } from '../services/sudokuLogic';
 import { audioService } from '../services/audioService';
 import { generateReferralCode } from '../utils/referralUtils';
-import { supabase } from '../services/supabase';
+import { auth, db } from '../services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import {
+  collection, doc, getDoc, getDocs, setDoc, updateDoc,
+  query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp,
+  Timestamp
+} from 'firebase/firestore';
 
 const USER_KEY = 'sudoku-user-profile';
 const CHAT_KEY = 'sudoku-chat-history';
@@ -67,11 +73,14 @@ const App: React.FC = () => {
   useEffect(() => {
     if (view === 'admin') {
       const fetchAdminData = async () => {
-        const { data: profiles } = await supabase.from('profiles').select('*, levels_completed(count)');
-        const { data: purchases } = await supabase.from('purchases').select('*');
+        const profilesSnap = await getDocs(collection(db, 'profiles'));
+        const purchasesSnap = await getDocs(collection(db, 'purchases'));
 
-        if (profiles) {
-          const processedUsers = profiles.map(p => ({
+        const profiles = profilesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const purchases = purchasesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (profiles.length > 0) {
+          const processedUsers = profiles.map((p: any) => ({
             id: p.id,
             name: p.name || 'Anonymous',
             email: p.email || '',
@@ -80,12 +89,12 @@ const App: React.FC = () => {
             avatar: p.avatar || '',
             musicEnabled: p.music_enabled,
             soundEnabled: p.sound_enabled,
-            completedLevelCount: p.levels_completed?.[0]?.count || 0,
+            completedLevelCount: p.completed_level_count || 0,
             purchaseHistory: (purchases || [])
-              .filter(pur => pur.user_id === p.id)
-              .map(pur => ({
+              .filter((pur: any) => pur.user_id === p.id)
+              .map((pur: any) => ({
                 id: pur.id,
-                date: new Date(pur.created_at).getTime(),
+                date: pur.created_at?.seconds * 1000 || Date.now(),
                 credits: pur.credits,
                 amount: pur.amount,
                 currency: pur.currency,
@@ -117,49 +126,48 @@ const App: React.FC = () => {
     const savedChat = localStorage.getItem(CHAT_KEY);
     if (savedChat) setMessages(JSON.parse(savedChat));
 
-    // Supabase Auth Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
+    // Firebase Auth Listener
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchUserProfile(user.uid);
       } else {
         setUserProfile(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*, levels_completed(level_id)')
-      .eq('id', userId)
-      .single();
+    const docRef = doc(db, 'profiles', userId);
+    const docSnap = await getDoc(docRef);
 
-    if (data && !error) {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
       const profile: UserProfile = {
         name: data.name,
         email: data.email,
         totalScore: data.total_score,
-        completedLevelCount: data.levels_completed?.length || 0,
+        completedLevelCount: data.completed_level_count || 0,
         credits: data.credits,
         soundEnabled: data.sound_enabled,
         musicEnabled: data.music_enabled,
         selectedTrackIndex: data.selected_track_index,
         avatar: data.avatar,
-        purchaseHistory: [], // Will fetch separately if needed
+        purchaseHistory: [],
         referralCode: data.referral_code,
         referralData: {
           code: data.referral_code,
-          userId: data.id,
-          createdAt: new Date(data.created_at).getTime(),
+          userId: userId,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
           totalReferred: 0,
           totalEarned: 0,
           referredUsers: []
         }
       };
       setUserProfile(profile);
-      setCompletedLevels(data.levels_completed?.map((l: any) => l.level_id) || []);
+      // Fetch level progress if stored separately, or use a field in profile
+      setCompletedLevels(data.completed_levels || []);
       setView('game');
     }
   };
@@ -199,79 +207,61 @@ const App: React.FC = () => {
   // Removed chat simulator for production
 
   useEffect(() => {
-    // Initial fetch
-    supabase.from('chat_messages').select('*').order('created_at', { ascending: true }).limit(50)
-      .then(({ data }) => {
-        if (data) {
-          setMessages(data.map(m => ({
-            id: m.id,
-            sender: m.sender,
-            text: m.text,
-            timestamp: new Date(m.created_at).getTime(),
-            isMe: userProfile?.name === m.sender
-          })));
-        }
+    // Firestore Chat Subscription
+    const q = query(collection(db, 'chat_messages'), orderBy('created_at', 'asc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedMessages = snapshot.docs.map(doc => {
+        const m = doc.data();
+        return {
+          id: doc.id,
+          sender: m.sender,
+          text: m.text,
+          timestamp: m.created_at?.seconds * 1000 || Date.now(),
+          isMe: userProfile?.name === m.sender
+        };
       });
+      setMessages(fetchedMessages);
+    });
 
-    // Realtime subscription
-    const channel = supabase.channel('chat_messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        payload => {
-          const m = payload.new;
-          setMessages(prev => [...prev, {
-            id: m.id,
-            sender: m.sender,
-            text: m.text,
-            timestamp: new Date(m.created_at).getTime(),
-            isMe: userProfile?.name === m.sender
-          }]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, [userProfile?.name]);
 
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('name, total_score, levels_completed(count)')
-        .order('total_score', { ascending: false })
-        .limit(100);
+      const q = query(collection(db, 'profiles'), orderBy('total_score', 'desc'), limit(100));
+      const querySnapshot = await getDocs(q);
 
-      if (data) {
-        const realEntries: LeaderboardEntry[] = data.map(p => ({
+      const realEntries: LeaderboardEntry[] = querySnapshot.docs.map(doc => {
+        const p = doc.data();
+        return {
           name: p.name || 'Anonymous',
           score: p.total_score || 0,
-          levels: p.levels_completed?.[0]?.count || 0,
+          levels: p.completed_level_count || 0,
           isCurrentUser: userProfile?.name === p.name
-        }));
+        };
+      });
 
-        // Mock players for Flippa Demo
-        const demoPlayers: LeaderboardEntry[] = [
-          { name: "SudokuMaster_99", score: 12450, levels: 42 },
-          { name: "Pro_Gamer_PT", score: 10800, levels: 35 },
-          { name: "LogicKing", score: 9200, levels: 31 },
-          { name: "BrainTrain2026", score: 8500, levels: 28 },
-          { name: "SmartPuzzles", score: 7100, levels: 22 },
-          { name: "DailyPlayer", score: 6400, levels: 19 },
-          { name: "MindBender", score: 5800, levels: 15 },
-          { name: "FastSolver", score: 4200, levels: 12 },
-          { name: "EasyPeasy", score: 3100, levels: 8 },
-          { name: "Newbie_101", score: 1500, levels: 4 },
-        ];
+      // Mock players for Flippa Demo
+      const demoPlayers: LeaderboardEntry[] = [
+        { name: "SudokuMaster_99", score: 12450, levels: 42 },
+        { name: "Pro_Gamer_PT", score: 10800, levels: 35 },
+        { name: "LogicKing", score: 9200, levels: 31 },
+        { name: "BrainTrain2026", score: 8500, levels: 28 },
+        { name: "SmartPuzzles", score: 7100, levels: 22 },
+        { name: "DailyPlayer", score: 6400, levels: 19 },
+        { name: "MindBender", score: 5800, levels: 15 },
+        { name: "FastSolver", score: 4200, levels: 12 },
+        { name: "EasyPeasy", score: 3100, levels: 8 },
+        { name: "Newbie_101", score: 1500, levels: 4 },
+      ];
 
-        const combinedEntries = [...realEntries, ...demoPlayers]
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 100);
+      const combinedEntries = [...realEntries, ...demoPlayers]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 100);
 
-        setLeaderboardEntries(combinedEntries);
-      }
+      setLeaderboardEntries(combinedEntries);
     };
     fetchLeaderboard();
   }, [userProfile]);
@@ -284,9 +274,9 @@ const App: React.FC = () => {
     setUserProfile(updated);
     if (updated.soundEnabled) audioService.playClick();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = auth.currentUser;
     if (user) {
-      await supabase.from('profiles').update({ sound_enabled: updated.soundEnabled }).eq('id', user.id);
+      await updateDoc(doc(db, 'profiles', user.uid), { sound_enabled: updated.soundEnabled });
     }
   };
 
@@ -295,9 +285,9 @@ const App: React.FC = () => {
     const updated = { ...userProfile, musicEnabled: !userProfile.musicEnabled };
     setUserProfile(updated);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = auth.currentUser;
     if (user) {
-      await supabase.from('profiles').update({ music_enabled: updated.musicEnabled }).eq('id', user.id);
+      await updateDoc(doc(db, 'profiles', user.uid), { music_enabled: updated.musicEnabled });
     }
   };
 
@@ -455,39 +445,34 @@ const App: React.FC = () => {
   };
 
   const syncProgress = async (levelId: number, totalScore: number) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = auth.currentUser;
     if (user) {
-      // Save level completion
-      await supabase.from('levels_completed').upsert({
-        user_id: user.id,
-        level_id: levelId
+      const profileRef = doc(db, 'profiles', user.uid);
+      await updateDoc(profileRef, {
+        total_score: totalScore,
+        completed_levels: [...completedLevels, levelId],
+        completed_level_count: (completedLevels.length + 1)
       });
-
-      // Update total score
-      await supabase.from('profiles').update({
-        total_score: totalScore
-      }).eq('id', user.id);
     }
   };
 
   const syncCredits = async (newCredits: number) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = auth.currentUser;
     if (user) {
-      await supabase.from('profiles').update({
-        credits: newCredits
-      }).eq('id', user.id);
+      await updateDoc(doc(db, 'profiles', user.uid), { credits: newCredits });
     }
   };
 
   const recordPurchase = async (pack: CreditPack) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = auth.currentUser;
     if (user) {
-      await supabase.from('purchases').insert({
-        user_id: user.id,
+      await addDoc(collection(db, 'purchases'), {
+        user_id: user.uid,
         credits: pack.qty,
         amount: pack.price,
         currency: '$',
-        status: 'completed'
+        status: 'completed',
+        created_at: serverTimestamp()
       });
     }
   };
@@ -568,16 +553,15 @@ const App: React.FC = () => {
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
           }}
           onUpdateUser={async (id, updates) => {
-            const { error } = await supabase
-              .from('profiles')
-              .update({
+            const profileRef = doc(db, 'profiles', id);
+            try {
+              await updateDoc(profileRef, {
                 credits: updates.credits,
-                total_score: updates.totalScore,
-              })
-              .eq('id', id);
-
-            if (!error) {
+                total_score: (updates as any).totalScore,
+              });
               setAdminUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+            } catch (err) {
+              console.error("Error updating user:", err);
             }
           }}
           onBack={() => setView(state ? 'game' : 'landing')}
@@ -719,11 +703,10 @@ const App: React.FC = () => {
                           audioService.setTrack(i);
 
                           // Sync with Supabase
-                          supabase.auth.getUser().then(({ data: { user } }) => {
-                            if (user) {
-                              supabase.from('profiles').update({ selected_track_index: i }).eq('id', user.id);
-                            }
-                          });
+                          const user = auth.currentUser;
+                          if (user) {
+                            updateDoc(doc(db, 'profiles', user.uid), { selected_track_index: i });
+                          }
                         }
                       }}
                       className={`w-full py-3 px-4 text-sm font-bold flex items-center justify-between transition-colors ${userProfile?.selectedTrackIndex === i ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-slate-100 text-slate-600'}`}
@@ -754,11 +737,12 @@ const App: React.FC = () => {
             const m = { sender: userProfile?.name || 'Guest', text: t };
 
             // Push to Supabase
-            const { data: { user } } = await supabase.auth.getUser();
-            await supabase.from('chat_messages').insert({
-              user_id: user?.id || null,
+            const user = auth.currentUser;
+            await addDoc(collection(db, 'chat_messages'), {
+              user_id: user?.uid || null,
               sender: m.sender,
-              text: m.text
+              text: m.text,
+              created_at: serverTimestamp()
             });
           }}
           onClose={() => setShowChat(false)}
