@@ -626,12 +626,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ users, settings, onUpda
 
                     <nav className="space-y-2">
                         {[
-                            { id: 'dashboard', label: 'Estatísticas', icon: <LayoutDashboard size={18} /> },
-                            { id: 'users', label: 'Jogadores', icon: <Users size={18} /> },
-                            { id: 'rankings', label: 'Classificação', icon: <Trophy size={18} /> },
-                            { id: 'sales', label: 'Vendas', icon: <ShoppingBag size={18} /> },
-                            { id: 'payments', label: 'Pagamentos', icon: <DollarSign size={18} /> },
-                            { id: 'settings', label: 'Configuração', icon: <Settings size={18} /> },
+                            { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+                            { id: 'users', label: 'Players', icon: <Users size={18} /> },
+                            { id: 'rankings', label: 'Rankings', icon: <Trophy size={18} /> },
+                            { id: 'sales', label: 'Sales History', icon: <ShoppingBag size={18} /> },
+                            { id: 'payments', label: 'Payments', icon: <DollarSign size={18} /> },
+                            { id: 'settings', label: 'Global Setup', icon: <Settings size={18} /> },
                         ].map(tab => (
                             <button
                                 key={tab.id}
